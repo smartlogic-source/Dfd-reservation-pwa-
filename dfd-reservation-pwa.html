@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b3f77" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DFD Reservations" />
+  <title>Day For Development | نظام الحجز</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      --blue:        #0b3f77;
+      --blue-dark:   #082d58;
+      --blue-light:  #3f87d9;
+      --gold:        #c9982f;
+      --gold-light:  #e0b84a;
+      --gold-soft:   rgba(201,152,47,.13);
+      --surface:     #ffffff;
+      --surface-2:   #f4f8fd;
+      --border:      #d5e3f3;
+      --text:        #15263a;
+      --muted:       #5e7a94;
+      --danger:      #c0392b;
+      --danger-bg:   #fff0f0;
+      --success:     #1a7f4b;
+      --success-bg:  #f0fff6;
+      --warn:        #7a5800;
+      --warn-bg:     #fffbec;
+      --info:        #0d47a1;
+      --info-bg:     #e8f1ff;
+      --radius-sm:   10px;
+      --radius-md:   16px;
+      --radius-lg:   22px;
+      --shadow-sm:   0 2px 10px rgba(11,63,119,.08);
+      --shadow-md:   0 8px 28px rgba(11,63,119,.14);
+      --shadow-lg:   0 20px 56px rgba(11,63,119,.18);
+      --font:        'Tajawal', system-ui, sans-serif;
+      --safe-top:    env(safe-area-inset-top, 0px);
+      --safe-bot:    env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-tap-highlight-color: transparent; height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--surface-2);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ===== APP SHELL ===== */
+    #app {
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      position: relative;
+    }
+
+    /* ===== STATUS BAR FILL ===== */
+    .status-fill {
+      background: var(--blue-dark);
+      height: var(--safe-top);
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      max-width: 430px;
+      margin: 0 auto;
+      z-index: 100;
+    }
+
+    /* ===== TOP NAV ===== */
+    .top-nav {
+      background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 100%);
+      padding: calc(var(--safe-top) + 14px) 16px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 16px rgba(11,63,119,.30);
+    }
+    .nav-back {
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.1);
+      color: #fff;
+      font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .nav-back:active { background: rgba(255,255,255,.2); }
+    .nav-title {
+      flex: 1;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .nav-action {
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.85);
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background .2s;
+      flex-shrink: 0;
+    }
+    .nav-action:active { background: rgba(255,255,255,.2); }
+
+    /* ===== SCREEN SYSTEM ===== */
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      animation: fadeUp .3s ease both;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== SCROLLABLE BODY ===== */
+    .screen-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px 16px;
+      padding-bottom: calc(var(--safe-bot) + 90px);
+    }
+
+    /* ===== HERO (Home) ===== */
+    .hero {
+      background: linear-gradient(155deg, var(--blue-dark) 0%, var(--blue) 55%, #2060a8 100%);
+      padding: calc(var(--safe-top) + 28px) 24px 36px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201,152,47,.22), transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      bottom: -40px; left: -40px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(63,135,217,.2), transparent 70%);
+      pointer-events: none;
+    }
+    .hero-logo {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .hero-brand {
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .hero-title {
+      color: #fff;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .hero-sub {
+      color: rgba(255,255,255,.65);
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    /* ===== MENU CARDS ===== */
+    .menu-grid {
+      padding: 20px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .menu-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+      box-shadow: var(--shadow-sm);
+    }
+    .menu-card:active {
+      transform: scale(.97);
+      box-shadow: none;
+    }
+    .menu-card.featured {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+      border-color: transparent;
+      flex-direction: row;
+      align-items: center;
+      padding: 22px 20px;
+    }
+    .menu-card.featured .card-icon { font-size: 34px; }
+    .menu-card.featured .card-label { color: #fff; font-size: 16px; }
+    .menu-card.featured .card-sub { color: rgba(255,255,255,.65); }
+    .card-icon { font-size: 28px; line-height: 1; }
+    .card-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .card-sub {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .card-text { flex: 1; }
+
+    /* ===== FORM ELEMENTS ===== */
+    .field { margin-bottom: 14px; }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+      padding-right: 2px;
+    }
+    .field-input,
+    .field-select {
+      width: 100%;
+      padding: 13px 14px;
+      font-size: 15px;
+      font-family: var(--font);
+      font-weight: 500;
+      color: var(--text);
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field-input::placeholder { color: #a0b0c0; }
+    .field-input:focus,
+    .field-select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(63,135,217,.15);
+    }
+    .field-select-wrap {
+      position: relative;
+    }
+    .field-select-wrap::after {
+      content: "▾";
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      font-size: 14px;
+    }
+
+    /* ===== SECTION HEADING ===== */
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .section-head-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .section-head-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ===== CALENDAR ===== */
+    .cal-wrap {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 12px;
+      margin-bottom: 14px;
+    }
+    .cal-wrap.disabled {
+      opacity: .5;
+      pointer-events: none;
+    }
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--blue);
+    }
+    .cal-btn {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--surface-2);
+      color: var(--blue);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+    }
+    .cal-btn:active { background: var(--border); }
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .cal-weekdays span {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+      padding: 4px 0;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-cell {
+      height: 38px;
+      border-radius: 10px;
+      border: 1.5px solid transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #9eb3c8;
+      background: transparent;
+      position: relative;
+      user-select: none;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .cal-cell.blank { background: transparent; border-color: transparent; }
+    .cal-cell.unavail { background: var(--surface-2); color: #b8cad8; border-color: transparent; }
+    .cal-cell.avail {
+      background: var(--gold-soft);
+      border-color: rgba(201,152,47,.38);
+      color: #7a5200;
+      cursor: pointer;
+    }
+    .cal-cell.avail:active { background: rgba(201,152,47,.25); }
+    .cal-cell.selected {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+    .cal-cell.today::after {
+      content: "";
+      position: absolute;
+      bottom: 5px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+    .cal-cell.selected.today::after { background: rgba(255,255,255,.7); }
+    .cal-hint {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      width: 100%;
+      padding: 15px 20px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(201,152,47,.30);
+    }
+    .btn-primary:active { box-shadow: none; }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .btn-blue {
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(11,63,119,.25);
+    }
+    .btn-ghost {
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      box-shadow: none;
+    }
+    .btn-danger {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1.5px solid rgba(192,57,43,.2);
+    }
+    .btn-sm {
+      padding: 10px 16px;
+      font-size: 14px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ===== BOTTOM CTA (sticky) ===== */
+    .bottom-cta {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      padding: 12px 16px calc(var(--safe-bot) + 12px);
+      background: linear-gradient(0deg, var(--surface) 65%, transparent);
+      z-index: 30;
+    }
+
+    /* ===== TOAST / ALERT ===== */
+    .toast-wrap {
+      position: fixed;
+      top: calc(var(--safe-top) + 76px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 400px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      line-height: 1.5;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      animation: toastIn .3s ease both;
+      pointer-events: all;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .toast.success { background: var(--success-bg); color: var(--success); border: 1.5px solid rgba(26,127,75,.2); }
+    .toast.error   { background: var(--danger-bg);  color: var(--danger);  border: 1.5px solid rgba(192,57,43,.2); }
+    .toast.warn    { background: var(--warn-bg);    color: var(--warn);    border: 1.5px solid rgba(122,88,0,.2); }
+    .toast.info    { background: var(--info-bg);    color: var(--info);    border: 1.5px solid rgba(13,71,161,.2); }
+    .toast-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== INLINE ALERT (inline, not toast) ===== */
+    .alert {
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 14px;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .alert.success { background: var(--success-bg); color: var(--success); border: 1.5px solid rgba(26,127,75,.2); }
+    .alert.error   { background: var(--danger-bg);  color: var(--danger);  border: 1.5px solid rgba(192,57,43,.2); }
+    .alert.warn    { background: var(--warn-bg);    color: var(--warn);    border: 1.5px solid rgba(122,88,0,.2); }
+    .alert.info    { background: var(--info-bg);    color: var(--info);    border: 1.5px solid rgba(13,71,161,.2); }
+    .alert-icon { flex-shrink: 0; font-size: 16px; margin-top: 1px; }
+
+    /* ===== LOADING OVERLAY ===== */
+    .loader {
+      position: fixed;
+      inset: 0;
+      background: rgba(244,248,253,.88);
+      backdrop-filter: blur(3px);
+      z-index: 999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .loader.show { display: flex; }
+    .spinner {
+      width: 46px; height: 46px;
+      border: 4px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .9s linear infinite;
+    }
+    .loader-text { font-size: 14px; font-weight: 700; color: var(--blue); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== RESERVATION CARDS ===== */
+    .res-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .res-card:active { border-color: var(--blue-light); box-shadow: var(--shadow-sm); }
+    .res-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .res-card-name { font-size: 15px; font-weight: 700; }
+    .res-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+    .res-badge.confirmed { background: var(--success-bg); color: var(--success); }
+    .res-badge.pending   { background: var(--warn-bg);    color: var(--warn); }
+    .res-badge.cancelled { background: var(--danger-bg);  color: var(--danger); }
+    .res-meta { display: flex; flex-direction: column; gap: 4px; }
+    .res-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .res-meta-icon { font-size: 14px; }
+
+    /* ===== STEP INDICATOR ===== */
+    .steps {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 0 16px;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: all .3s;
+    }
+    .step-dot.active { background: var(--blue); width: 24px; border-radius: 4px; }
+    .step-dot.done   { background: var(--gold); }
+
+    /* ===== DIVIDER ===== */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+      gap: 10px;
+      text-align: center;
+    }
+    .empty-icon { font-size: 48px; opacity: .4; }
+    .empty-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .empty-sub { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ===== DETAIL SUMMARY ROW ===== */
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .summary-value { font-size: 14px; font-weight: 700; color: var(--text); text-align: left; max-width: 60%; word-break: break-all; }
+
+    /* ===== ADMIN SECTION CARD ===== */
+    .admin-section {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .admin-section-head {
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-section-body { padding: 16px; }
+
+    /* ===== STAT CARD ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-num  { font-size: 28px; font-weight: 900; color: var(--blue); }
+    .stat-lbl  { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+    /* ===== LOGIN CARD ===== */
+    .login-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px calc(var(--safe-bot) + 32px);
+    }
+    .login-logo {
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .login-title { font-size: 24px; font-weight: 800; color: var(--blue); margin-bottom: 4px; }
+    .login-sub   { font-size: 13px; color: var(--muted); margin-bottom: 32px; text-align: center; }
+    .login-card  {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      box-shadow: var(--shadow-md);
+    }
+    .tabs-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: var(--surface-2);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--blue);
+      box-shadow: 0 2px 8px rgba(11,63,119,.1);
+    }
+
+    /* ===== SUCCESS SCREEN ===== */
+    .success-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      text-align: center;
+    }
+    .success-icon {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--success-bg);
+      border: 3px solid rgba(26,127,75,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+      animation: popIn .4s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(.5); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+    .success-title { font-size: 22px; font-weight: 800; color: var(--success); margin-bottom: 8px; }
+    .success-sub   { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
+
+    /* ===== PILL CHIP ===== */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--surface-2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    /* ===== FOOTER ===== */
+    .app-footer {
+      padding: 14px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 0; }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes shimmer {
+      0%   { background-position: -200% 0; }
+      100% { background-position:  200% 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #e8eef5 25%, #f5f8fc 50%, #e8eef5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 8px;
+    }
+
+    /* ===== RESPONSIVE FINE-TUNING ===== */
+    @media (min-width: 430px) {
+      #app { box-shadow: var(--shadow-lg); }
+      body { background: #e8f0fa; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- ===== LOADING OVERLAY ===== -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p class="loader-text" id="loaderText">جارٍ التحميل...</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: HOME                                                  -->
+  <!-- ============================================================ -->
+  <div class="screen active" id="screenHome">
+    <div class="hero">
+      <div class="hero-logo">📅</div>
+      <div class="hero-brand">Day For Development · شركة الدواء</div>
+      <div class="hero-title">نظام حجز المواعيد</div>
+      <div class="hero-sub">احجز موعدك بسهولة وسرعة من هاتفك</div>
+    </div>
+
+    <div class="menu-grid">
+      <div class="menu-card featured" onclick="goToBooking()">
+        <div class="card-icon">🗓️</div>
+        <div class="card-text">
+          <div class="card-label">احجز موعد جديد</div>
+          <div class="card-sub">اختر المشرف والفرع والوقت</div>
+        </div>
+        <div style="margin-right:auto;color:rgba(255,255,255,.5);font-size:20px;">‹</div>
+      </div>
+
+      <div class="menu-card" onclick="goToMyReservations()">
+        <div class="card-icon">📋</div>
+        <div class="card-label">حجوزاتي</div>
+        <div class="card-sub">عرض وإدارة مواعيدك</div>
+      </div>
+
+      <div class="menu-card" onclick="goToAdmin()">
+        <div class="card-icon">⚙️</div>
+        <div class="card-label">لوحة الإدارة</div>
+        <div class="card-sub">للمشرفين والقادة</div>
+      </div>
+    </div>
+
+    <div style="padding: 0 16px 20px;">
+      <div class="alert info">
+        <div class="alert-icon">ℹ️</div>
+        <div>تأكد من إدخال بريدك الإلكتروني الصحيح لاستقبال تأكيد الحجز.</div>
+      </div>
+    </div>
+
+    <div class="app-footer">© شركة الدواء للخدمات الطبية · DFD Reservations</div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: BOOKING (Step 1 – Select Leader & Branch)             -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenBook1">
+    <div class="top-nav">
+      <button class="nav-back" onclick="goHome()">‹</button>
+      <div class="nav-title">حجز موعد جديد</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="screen-body">
+      <!-- Steps -->
+      <div class="steps">
+        <div class="step-dot active" id="step1dot1"></div>
+        <div class="step-dot" id="step1dot2"></div>
+        <div class="step-dot" id="step1dot3"></div>
+        <div class="step-label" style="font-size:12px;color:var(--muted);font-weight:700;margin-right:6px">الخطوة 1 من 3</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">👤 المشرف</label>
+        <div class="field-select-wrap">
+          <select class="field-select" id="bk_leader" onchange="onBookLeaderChange()">
+            <option value="">اختر المشرف...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">🏢 الفرع</label>
+        <div class="field-select-wrap">
+          <select class="field-select" id="bk_branch" disabled onchange="onBookBranchChange()">
+            <option value="">اختر الفرع أولاً...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label class="field-label">👤 الاسم الكامل</label>
+        <input class="field-input" type="text" id="bk_name" placeholder="اكتب اسمك الكامل" />
+      </div>
+      <div class="field">
+        <label class="field-label">✉️ البريد الإلكتروني</label>
+        <input class="field-input" type="email" id="bk_email" placeholder="example@company.com" dir="ltr" />
+      </div>
+      <div class="field">
+        <label class="field-label">🔢 رقم الموظف</label>
+        <input class="field-input" type="text" inputmode="numeric" id="bk_empid" placeholder="أدخل رقم الموظف" />
+      </div>
+
+      <div id="bk_step1_msg"></div>
+    </div>
+    <div class="bottom-cta">
+      <button class="btn btn-primary" id="bk_next1btn" onclick="goBookStep2()">التالي — اختيار الموعد ›</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: BOOKING (Step 2 – Pick date & time)                   -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenBook2">
+    <div class="top-nav">
+      <button class="nav-back" onclick="showScreen('screenBook1')">‹</button>
+      <div class="nav-title">اختر الموعد</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="screen-body">
+      <div class="steps">
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-label" style="font-size:12px;color:var(--muted);font-weight:700;margin-right:6px">الخطوة 2 من 3</div>
+      </div>
+
+      <div class="cal-wrap" id="bk_cal">
+        <div class="cal-header">
+          <button class="cal-btn" id="calPrev" onclick="calPrev()">›</button>
+          <div class="cal-title" id="calTitle">—</div>
+          <button class="cal-btn" id="calNext" onclick="calNext()">‹</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>س</span><span>ح</span><span>ن</span><span>ث</span><span>ر</span><span>خ</span><span>ج</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-hint" id="calHint">اختر يوماً متاحاً لإظهار الأوقات</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">🕐 الوقت</label>
+        <div class="field-select-wrap">
+          <select class="field-select" id="bk_time" disabled>
+            <option value="">اختر الوقت...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="bk_step2_msg"></div>
+    </div>
+    <div class="bottom-cta">
+      <button class="btn btn-primary" onclick="goBookStep3()">التالي — مراجعة وتأكيد ›</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: BOOKING (Step 3 – Confirm)                            -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenBook3">
+    <div class="top-nav">
+      <button class="nav-back" onclick="showScreen('screenBook2')">‹</button>
+      <div class="nav-title">تأكيد الحجز</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="screen-body">
+      <div class="steps">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-label" style="font-size:12px;color:var(--muted);font-weight:700;margin-right:6px">الخطوة 3 من 3</div>
+      </div>
+
+      <div class="alert info" style="margin-bottom:16px">
+        <div class="alert-icon">👀</div>
+        <div>راجع تفاصيل حجزك قبل التأكيد</div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-head">📝 تفاصيل الحجز</div>
+        <div class="admin-section-body" id="bk_summary"></div>
+      </div>
+
+      <div id="bk_step3_msg"></div>
+    </div>
+    <div class="bottom-cta">
+      <button class="btn btn-primary" id="bk_confirmBtn" onclick="submitBooking()">✅ تأكيد الحجز</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: BOOKING SUCCESS                                       -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenBookSuccess">
+    <div class="top-nav">
+      <button class="nav-back" onclick="goHome()">‹</button>
+      <div class="nav-title">تم الحجز</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="success-wrap">
+      <div class="success-icon">✅</div>
+      <div class="success-title">تم تأكيد حجزك!</div>
+      <div class="success-sub" id="bk_success_msg">سيصلك بريد إلكتروني بتفاصيل الحجز.</div>
+      <button class="btn btn-blue" onclick="goHome()" style="max-width:280px">العودة للرئيسية</button>
+      <div style="height:12px"></div>
+      <button class="btn btn-ghost btn-sm" onclick="goToBooking()" style="max-width:280px">حجز موعد آخر</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: MY RESERVATIONS (Login)                               -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenMyResLogin">
+    <div class="top-nav">
+      <button class="nav-back" onclick="goHome()">‹</button>
+      <div class="nav-title">حجوزاتي</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="login-wrap">
+      <div class="login-logo">📋</div>
+      <div class="login-title">حجوزاتي</div>
+      <div class="login-sub">أدخل رقم الموظف أو بريدك الإلكتروني للبحث عن حجوزاتك</div>
+      <div class="login-card">
+        <div class="field">
+          <label class="field-label">🔢 رقم الموظف</label>
+          <input class="field-input" type="text" inputmode="numeric" id="mr_empid" placeholder="أدخل رقم الموظف" />
+        </div>
+        <div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:12px">أو</div>
+        <div class="field">
+          <label class="field-label">✉️ البريد الإلكتروني</label>
+          <input class="field-input" type="email" id="mr_email" placeholder="example@company.com" dir="ltr" />
+        </div>
+        <div class="field">
+          <label class="field-label">👤 المشرف</label>
+          <div class="field-select-wrap">
+            <select class="field-select" id="mr_leader">
+              <option value="">اختر المشرف...</option>
+            </select>
+          </div>
+        </div>
+        <div id="mr_login_msg"></div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="searchMyReservations()">🔍 بحث عن حجوزاتي</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: MY RESERVATIONS (List)                                -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenMyRes">
+    <div class="top-nav">
+      <button class="nav-back" onclick="showScreen('screenMyResLogin')">‹</button>
+      <div class="nav-title">حجوزاتي</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="screen-body" id="myResBody">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: RESERVATION DETAIL                                    -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenResDetail">
+    <div class="top-nav">
+      <button class="nav-back" onclick="showScreen('screenMyRes')">‹</button>
+      <div class="nav-title">تفاصيل الحجز</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="screen-body" id="resDetailBody">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: ADMIN LOGIN                                           -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenAdminLogin">
+    <div class="top-nav">
+      <button class="nav-back" onclick="goHome()">‹</button>
+      <div class="nav-title">لوحة الإدارة</div>
+      <div style="width:36px"></div>
+    </div>
+    <div class="login-wrap">
+      <div class="login-logo">⚙️</div>
+      <div class="login-title">تسجيل الدخول</div>
+      <div class="login-sub">للمشرفين والقادة فقط</div>
+      <div class="login-card">
+        <div class="tabs-row">
+          <button class="tab-btn active" id="tabLeader" onclick="switchAdminTab('leader')">مشرف / قائد</button>
+          <button class="tab-btn" id="tabSenior" onclick="switchAdminTab('senior')">مدير (Senior)</button>
+        </div>
+
+        <!-- Leader login -->
+        <div id="adminLoginLeader">
+          <div class="field">
+            <label class="field-label">🆔 معرّف المشرف</label>
+            <div class="field-select-wrap">
+              <select class="field-select" id="adm_leaderId">
+                <option value="">اختر المشرف...</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">🔒 كلمة المرور</label>
+            <input class="field-input" type="password" id="adm_pass" placeholder="••••••••" dir="ltr" />
+          </div>
+        </div>
+
+        <!-- Senior login -->
+        <div id="adminLoginSenior" style="display:none">
+          <div class="field">
+            <label class="field-label">✉️ البريد الإلكتروني</label>
+            <input class="field-input" type="email" id="adm_seniorEmail" placeholder="senior@company.com" dir="ltr" />
+          </div>
+          <div class="field">
+            <label class="field-label">🔒 كلمة المرور</label>
+            <input class="field-input" type="password" id="adm_seniorPass" placeholder="••••••••" dir="ltr" />
+          </div>
+        </div>
+
+        <div id="adm_login_msg"></div>
+        <button class="btn btn-blue" style="margin-top:8px" onclick="doAdminLogin()">تسجيل الدخول ←</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SCREEN: ADMIN DASHBOARD                                       -->
+  <!-- ============================================================ -->
+  <div class="screen" id="screenAdminDash">
+    <div class="top-nav">
+      <button class="nav-back" onclick="adminLogout()">‹</button>
+      <div class="nav-title" id="adminDashTitle">لوحة الإدارة</div>
+      <button class="nav-action" onclick="adminRefresh()" title="تحديث">↻</button>
+    </div>
+    <div class="screen-body" id="adminDashBody">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- ===== SERVICE WORKER REGISTRATION ===== -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Inline SW for offline caching
+      const swCode = `
+        const CACHE = 'dfd-pwa-v1';
+        self.addEventListener('install', e => {
+          e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+          self.skipWaiting();
+        });
+        self.addEventListener('fetch', e => {
+          e.respondWith(
+            caches.match(e.request).then(r => r || fetch(e.request))
+          );
+        });
+      `;
+      const blob = new Blob([swCode], {type:'application/javascript'});
+      navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+    });
+  }
+</script>
+
+<script>
+/* ================================================================
+   CONFIG — SET YOUR APPS SCRIPT WEB APP URL HERE
+   ================================================================ */
+const GAS_URL = "https://script.google.com/macros/s/AKfycby1hGHcqpLB-z-XJ39YAXzSlD9cGE5ZQ7mal-WrSn4oGy6cOpSu5ZNWb7WYJzFy5NI/exec";
+
+/* ================================================================
+   STATE
+   ================================================================ */
+const state = {
+  leaders: [],
+  adminToken: null,
+  adminRole: null,
+  adminLeaderId: null,
+  adminLeaderName: null,
+  adminSeniorEmail: null,
+
+  // booking
+  bk: {
+    leaderId: "", branchCode: "", name: "", email: "", empId: "",
+    dateStr: "", slotId: "", slotLabel: "", leaderName: "", branchName: ""
+  },
+
+  // calendar
+  cal: { y: 0, m: 0, available: new Set(), allSlots: {} },
+
+  // my reservations
+  myRes: [],
+  currentRes: null,
+};
+
+/* ================================================================
+   NAVIGATION
+   ================================================================ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goHome() { showScreen('screenHome'); }
+
+function goToBooking() {
+  showScreen('screenBook1');
+  loadLeadersInto('bk_leader', () => {});
+}
+
+function goToMyReservations() {
+  showScreen('screenMyResLogin');
+  loadLeadersInto('mr_leader', () => {});
+}
+
+function goToAdmin() {
+  if (state.adminToken) {
+    showScreen('screenAdminDash');
+  } else {
+    showScreen('screenAdminLogin');
+    loadLeadersInto('adm_leaderId', () => {});
+  }
+}
+
+/* ================================================================
+   GAS API CALL — wraps fetch to GAS Web App
+   ================================================================ */
+async function gasCall(action, params = {}) {
+  const body = { action, ...params };
+  const resp = await fetch(GAS_URL, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" }
+  });
+  const text = await resp.text();
+  try { return JSON.parse(text); }
+  catch { return { ok: false, message: text }; }
+}
+
+/* ================================================================
+   LOADING
+   ================================================================ */
+function showLoader(text) {
+  document.getElementById('loaderText').textContent = text || 'جارٍ التحميل...';
+  document.getElementById('loader').classList.add('show');
+}
+function hideLoader() {
+  document.getElementById('loader').classList.remove('show');
+}
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+function toast(msg, type = 'info', duration = 3500) {
+  const icons = { success:'✅', error:'❌', warn:'⚠️', info:'ℹ️' };
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+/* ================================================================
+   INLINE MESSAGE IN A CONTAINER
+   ================================================================ */
+function setMsg(containerId, msg, type) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!msg) { el.innerHTML = ''; return; }
+  const icons = { success:'✅', error:'❌', warn:'⚠️', info:'ℹ️' };
+  el.innerHTML = `<div class="alert ${type}"><span class="alert-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span></div>`;
+}
+
+/* ================================================================
+   LEADERS CACHE + LOAD INTO SELECT
+   ================================================================ */
+async function ensureLeaders() {
+  if (state.leaders.length) return state.leaders;
+  showLoader('جارٍ تحميل المشرفين...');
+  try {
+    const data = await gasCall('api_listLeaders');
+    if (Array.isArray(data)) state.leaders = data;
+    else if (data.ok === false) throw new Error(data.message);
+    else state.leaders = data;
+  } finally { hideLoader(); }
+  return state.leaders;
+}
+
+async function loadLeadersInto(selectId, cb) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  await ensureLeaders();
+  sel.innerHTML = '<option value="">اختر المشرف...</option>';
+  state.leaders.forEach(l => {
+    const o = document.createElement('option');
+    o.value = l.leader_id;
+    o.textContent = l.leader_name || l.leader_id;
+    sel.appendChild(o);
+  });
+  if (cb) cb();
+}
+
+/* ================================================================
+   BOOKING — STEP 1
+   ================================================================ */
+async function onBookLeaderChange() {
+  const sel = document.getElementById('bk_leader');
+  state.bk.leaderId = sel.value;
+  state.bk.leaderName = sel.options[sel.selectedIndex]?.text || '';
+
+  const branchSel = document.getElementById('bk_branch');
+  branchSel.innerHTML = '<option value="">اختر الفرع...</option>';
+  branchSel.disabled = true;
+  state.bk.branchCode = '';
+  setMsg('bk_step1_msg', '', '');
+
+  if (!state.bk.leaderId) return;
+
+  showLoader('جارٍ تحميل الفروع...');
+  try {
+    const branches = await gasCall('api_listBranches', { leaderId: state.bk.leaderId });
+    const list = Array.isArray(branches) ? branches : (branches.branches || []);
+    branchSel.innerHTML = '<option value="">اختر الفرع...</option>';
+    list.forEach(b => {
+      const o = document.createElement('option');
+      o.value = b.branch_code;
+      o.textContent = b.branch_name || b.branch_code;
+      branchSel.appendChild(o);
+    });
+    branchSel.disabled = false;
+    if (!list.length) setMsg('bk_step1_msg', 'لا توجد فروع لهذا المشرف.', 'warn');
+  } catch (e) {
+    setMsg('bk_step1_msg', 'تعذر تحميل الفروع: ' + e.message, 'error');
+  } finally { hideLoader(); }
+}
+
+function onBookBranchChange() {
+  const sel = document.getElementById('bk_branch');
+  state.bk.branchCode = sel.value;
+  state.bk.branchName = sel.options[sel.selectedIndex]?.text || '';
+  setMsg('bk_step1_msg', '', '');
+}
+
+async function goBookStep2() {
+  state.bk.name   = document.getElementById('bk_name').value.trim();
+  state.bk.email  = document.getElementById('bk_email').value.trim();
+  state.bk.empId  = document.getElementById('bk_empid').value.trim();
+
+  if (!state.bk.leaderId)  return setMsg('bk_step1_msg', 'اختر المشرف أولاً.', 'warn');
+  if (!state.bk.branchCode) return setMsg('bk_step1_msg', 'اختر الفرع.', 'warn');
+  if (!state.bk.name)      return setMsg('bk_step1_msg', 'أدخل اسمك الكامل.', 'warn');
+  if (!state.bk.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.bk.email))
+    return setMsg('bk_step1_msg', 'أدخل بريد إلكتروني صحيح.', 'warn');
+  if (!state.bk.empId || state.bk.empId.length < 4)
+    return setMsg('bk_step1_msg', 'رقم الموظف يجب أن يكون 4 أرقام على الأقل.', 'warn');
+
+  // Check system status
+  showLoader('جارٍ فحص النظام...');
+  try {
+    const st = await gasCall('getSystemStatus', { leaderId: state.bk.leaderId });
+    if (st && st.closed) {
+      setMsg('bk_step1_msg', `⛔ انتهت فترة استقبال المواعيد. آخر يوم: ${st.closeAtText || '—'}`, 'error');
+      hideLoader();
+      return;
+    }
+  } catch (e) { /* ignore */ } finally { hideLoader(); }
+
+  // Load slots
+  showScreen('screenBook2');
+  await loadSlots();
+}
+
+async function loadSlots() {
+  state.bk.dateStr = '';
+  state.bk.slotId = '';
+  const timeSel = document.getElementById('bk_time');
+  timeSel.innerHTML = '<option value="">اختر الوقت...</option>';
+  timeSel.disabled = true;
+  setMsg('bk_step2_msg', '', '');
+
+  showLoader('جارٍ تحميل المواعيد...');
+  try {
+    const data = await gasCall('getAvailableSlotsV2', {
+      leaderId: state.bk.leaderId,
+      branchCode: state.bk.branchCode
+    });
+    state.cal.allSlots = data || {};
+    const keys = Object.keys(state.cal.allSlots).sort();
+    calSetAvailable(keys);
+    document.getElementById('calHint').style.display = keys.length ? 'block' : 'none';
+    if (!keys.length) setMsg('bk_step2_msg', 'لا توجد مواعيد متاحة حالياً.', 'warn');
+  } catch (e) {
+    setMsg('bk_step2_msg', 'تعذر تحميل المواعيد: ' + e.message, 'error');
+  } finally { hideLoader(); }
+}
+
+/* ================================================================
+   CALENDAR
+   ================================================================ */
+function pad2(n) { return String(n).padStart(2, '0'); }
+function toAr(s)  { return String(s).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); }
+
+function calSetAvailable(keys) {
+  state.cal.available = new Set(keys);
+  if (keys.length) {
+    const f = keys[0].split('-');
+    state.cal.y = +f[0]; state.cal.m = +f[1] - 1;
+  } else {
+    const n = new Date();
+    state.cal.y = n.getFullYear(); state.cal.m = n.getMonth();
+  }
+  renderCal();
+}
+
+function renderCal() {
+  const grid  = document.getElementById('calGrid');
+  const title = document.getElementById('calTitle');
+  if (!grid || !title) return;
+
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  title.textContent = `${months[state.cal.m]} ${toAr(state.cal.y)}`;
+  grid.innerHTML = '';
+
+  const firstDay = new Date(state.cal.y, state.cal.m, 1);
+  const daysInMonth = new Date(state.cal.y, state.cal.m + 1, 0).getDate();
+  const jsDow = firstDay.getDay();
+  const offset = (jsDow + 1) % 7; // Sat=0
+
+  for (let i = 0; i < offset; i++) {
+    const b = document.createElement('div');
+    b.className = 'cal-cell blank';
+    grid.appendChild(b);
+  }
+
+  const todayKey = (() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${pad2(n.getMonth()+1)}-${pad2(n.getDate())}`;
+  })();
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = `${state.cal.y}-${pad2(state.cal.m+1)}-${pad2(d)}`;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    cell.textContent = toAr(d);
+    if (key === todayKey) cell.classList.add('today');
+
+    if (state.cal.available.has(key)) {
+      cell.classList.add('avail');
+      cell.onclick = () => calSelectDate(key);
+    } else {
+      cell.classList.add('unavail');
+    }
+
+    if (state.bk.dateStr === key) cell.classList.add('selected');
+    grid.appendChild(cell);
+  }
+}
+
+function calPrev() {
+  state.cal.m--;
+  if (state.cal.m < 0) { state.cal.m = 11; state.cal.y--; }
+  renderCal();
+}
+function calNext() {
+  state.cal.m++;
+  if (state.cal.m > 11) { state.cal.m = 0; state.cal.y++; }
+  renderCal();
+}
+
+function calSelectDate(key) {
+  state.bk.dateStr = key;
+  setMsg('bk_step2_msg', '', '');
+  renderCal();
+  document.getElementById('calHint').style.display = 'none';
+
+  // populate times
+  const timeSel = document.getElementById('bk_time');
+  timeSel.innerHTML = '<option value="">اختر الوقت...</option>';
+  timeSel.disabled = true;
+  state.bk.slotId = '';
+
+  const list = state.cal.allSlots[key] || [];
+  if (!list.length) {
+    setMsg('bk_step2_msg', 'لا توجد أوقات لهذا اليوم.', 'warn');
+    return;
+  }
+
+  list.forEach(s => {
+    const slotId = String(s.slot_id ?? s.slotId ?? s.id ?? '').trim();
+    const label  = String(s.timeText ?? s.time_text ?? s.time ?? '').trim();
+    if (!slotId) return;
+    const o = document.createElement('option');
+    o.value = slotId;
+    o.textContent = label || 'موعد متاح';
+    timeSel.appendChild(o);
+  });
+  timeSel.disabled = false;
+  timeSel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function goBookStep3() {
+  state.bk.slotId = document.getElementById('bk_time').value;
+  const timeSel = document.getElementById('bk_time');
+  state.bk.slotLabel = timeSel.options[timeSel.selectedIndex]?.text || '';
+
+  if (!state.bk.dateStr) return setMsg('bk_step2_msg', 'اختر يوماً من التقويم.', 'warn');
+  if (!state.bk.slotId)  return setMsg('bk_step2_msg', 'اختر الوقت.', 'warn');
+
+  // Build summary
+  const rows = [
+    ['المشرف', state.bk.leaderName || state.bk.leaderId],
+    ['الفرع',  state.bk.branchName || state.bk.branchCode],
+    ['الاسم',  state.bk.name],
+    ['البريد', state.bk.email],
+    ['رقم الموظف', state.bk.empId],
+    ['التاريخ', formatDateAr(state.bk.dateStr)],
+    ['الوقت',  state.bk.slotLabel],
+  ];
+  document.getElementById('bk_summary').innerHTML = rows.map(([l, v]) => `
+    <div class="summary-row">
+      <span class="summary-label">${l}</span>
+      <span class="summary-value">${v}</span>
+    </div>
+  `).join('');
+
+  setMsg('bk_step3_msg', '', '');
+  showScreen('screenBook3');
+}
+
+async function submitBooking() {
+  const btn = document.getElementById('bk_confirmBtn');
+  btn.disabled = true;
+  showLoader('جارٍ إرسال الحجز...');
+  try {
+    const res = await gasCall('bookSlotV2', {
+      leaderId:   state.bk.leaderId,
+      name:       state.bk.name,
+      email:      state.bk.email,
+      dateStr:    state.bk.dateStr,
+      slotId:     state.bk.slotId,
+      employeeId: state.bk.empId,
+      branchCode: state.bk.branchCode
+    });
+    if (res && res.success) {
+      document.getElementById('bk_success_msg').textContent = res.message || 'سيصلك بريد إلكتروني بتفاصيل الحجز.';
+      showScreen('screenBookSuccess');
+    } else {
+      setMsg('bk_step3_msg', (res && res.message) || 'فشل الحجز، حاول مرة أخرى.', 'error');
+      btn.disabled = false;
+    }
+  } catch (e) {
+    setMsg('bk_step3_msg', 'خطأ في الاتصال: ' + e.message, 'error');
+    btn.disabled = false;
+  } finally { hideLoader(); }
+}
+
+/* ================================================================
+   MY RESERVATIONS
+   ================================================================ */
+async function searchMyReservations() {
+  const empId  = document.getElementById('mr_empid').value.trim();
+  const email  = document.getElementById('mr_email').value.trim();
+  const leader = document.getElementById('mr_leader').value.trim();
+
+  if (!empId && !email)       return setMsg('mr_login_msg', 'أدخل رقم الموظف أو البريد الإلكتروني.', 'warn');
+  if (!leader)                return setMsg('mr_login_msg', 'اختر المشرف.', 'warn');
+
+  showLoader('جارٍ البحث...');
+  try {
+    const res = await gasCall('api_listReservations', {
+      leaderId: leader,
+      employeeId: empId || undefined,
+      email: email || undefined,
+    });
+    const list = Array.isArray(res) ? res : (res.reservations || res.data || []);
+    state.myRes = list;
+    renderMyReservations();
+    showScreen('screenMyRes');
+  } catch (e) {
+    setMsg('mr_login_msg', 'خطأ: ' + e.message, 'error');
+  } finally { hideLoader(); }
+}
+
+function renderMyReservations() {
+  const body = document.getElementById('myResBody');
+  if (!state.myRes.length) {
+    body.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">لا توجد حجوزات</div>
+        <div class="empty-sub">لم يتم العثور على حجوزات بالبيانات المدخلة.</div>
+      </div>
+      <div style="padding:0 0 16px"><button class="btn btn-primary" onclick="goToBooking()">احجز موعد جديد</button></div>
+    `;
+    return;
+  }
+  body.innerHTML = `
+    <div style="margin-bottom:16px">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-num">${state.myRes.length}</div>
+          <div class="stat-lbl">إجمالي الحجوزات</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">${state.myRes.filter(r => !isCancelled(r)).length}</div>
+          <div class="stat-lbl">الحجوزات النشطة</div>
+        </div>
+      </div>
+    </div>
+    ${state.myRes.map((r, i) => buildResCard(r, i)).join('')}
+    <div style="height:20px"></div>
+  `;
+}
+
+function isCancelled(r) {
+  const s = String(r.status || r.cancelled || '').toLowerCase();
+  return s === 'cancelled' || s === 'ملغي' || s === 'true';
+}
+
+function buildResCard(r, i) {
+  const status = isCancelled(r) ? 'cancelled' : 'confirmed';
+  const statusLabel = isCancelled(r) ? 'ملغي' : 'مؤكد';
+  const date = r.date || r.Date || r.dateStr || '';
+  const time = r.time || r.Time || r.slotLabel || r.timeText || '';
+  const branch = r.branch || r.Branch || r.branch_code || '';
+  const name = r.name || r.Name || '';
+  return `
+    <div class="res-card" onclick="showResDetail(${i})">
+      <div class="res-card-head">
+        <div class="res-card-name">${name || '—'}</div>
+        <div class="res-badge ${status}">${statusLabel}</div>
+      </div>
+      <div class="res-meta">
+        ${date ? `<div class="res-meta-row"><span class="res-meta-icon">📅</span>${formatDateAr(date)}</div>` : ''}
+        ${time ? `<div class="res-meta-row"><span class="res-meta-icon">🕐</span>${time}</div>` : ''}
+        ${branch ? `<div class="res-meta-row"><span class="res-meta-icon">🏢</span>${branch}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function showResDetail(i) {
+  state.currentRes = state.myRes[i];
+  const r = state.currentRes;
+  const cancelled = isCancelled(r);
+  const fields = Object.entries(r).filter(([k]) => !['token','cancel_token','reservation_id','id'].includes(k));
+  const labelMap = {
+    name:'الاسم', email:'البريد', date:'التاريخ', time:'الوقت',
+    branch:'الفرع', region:'المنطقة', employeeId:'رقم الموظف',
+    status:'الحالة', branch_code:'كود الفرع'
+  };
+  const rows = fields.map(([k,v]) => {
+    const lbl = labelMap[k] || k;
+    let val = v == null ? '—' : String(v);
+    if (k === 'date') val = formatDateAr(val);
+    return `<div class="summary-row"><span class="summary-label">${lbl}</span><span class="summary-value">${val}</span></div>`;
+  }).join('');
+
+  document.getElementById('resDetailBody').innerHTML = `
+    <div class="admin-section" style="margin-bottom:16px">
+      <div class="admin-section-head">📝 تفاصيل الحجز</div>
+      <div class="admin-section-body">${rows}</div>
+    </div>
+    ${!cancelled ? `
+      <div style="padding:0 0 80px">
+        <button class="btn btn-danger" onclick="cancelMyReservation()">❌ إلغاء هذا الحجز</button>
+      </div>
+    ` : `<div class="alert error"><span class="alert-icon">❌</span><span>هذا الحجز ملغي بالفعل.</span></div>`}
+  `;
+  showScreen('screenResDetail');
+}
+
+async function cancelMyReservation() {
+  const r = state.currentRes;
+  const token = r.cancel_token || r.token || r.reservation_id || r.id || '';
+  const leaderId = document.getElementById('mr_leader').value;
+
+  if (!confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) return;
+
+  showLoader('جارٍ الإلغاء...');
+  try {
+    const res = await gasCall('api_cancelReservation', {
+      token, leaderId,
+      employeeId: r.employeeId || r.employee_id || ''
+    });
+    if (res && res.ok) {
+      toast('تم إلغاء الحجز بنجاح ✅', 'success');
+      state.currentRes.status = 'cancelled';
+      // refresh list
+      await searchMyReservations();
+      showScreen('screenMyRes');
+    } else {
+      toast((res && res.message) || 'فشل الإلغاء.', 'error');
+    }
+  } catch (e) {
+    toast('خطأ: ' + e.message, 'error');
+  } finally { hideLoader(); }
+}
+
+/* ================================================================
+   ADMIN LOGIN
+   ================================================================ */
+let adminTab = 'leader';
+function switchAdminTab(tab) {
+  adminTab = tab;
+  document.getElementById('tabLeader').classList.toggle('active', tab === 'leader');
+  document.getElementById('tabSenior').classList.toggle('active', tab === 'senior');
+  document.getElementById('adminLoginLeader').style.display = tab === 'leader' ? '' : 'none';
+  document.getElementById('adminLoginSenior').style.display = tab === 'senior' ? '' : 'none';
+  setMsg('adm_login_msg', '', '');
+}
+
+async function doAdminLogin() {
+  setMsg('adm_login_msg', '', '');
+  showLoader('جارٍ تسجيل الدخول...');
+  try {
+    let res;
+    if (adminTab === 'leader') {
+      const leaderId = document.getElementById('adm_leaderId').value;
+      const pass     = document.getElementById('adm_pass').value;
+      if (!leaderId) { hideLoader(); return setMsg('adm_login_msg', 'اختر المشرف.', 'warn'); }
+      if (!pass)     { hideLoader(); return setMsg('adm_login_msg', 'أدخل كلمة المرور.', 'warn'); }
+      res = await gasCall('api_adminLogin', { leaderId, password: pass });
+    } else {
+      const email = document.getElementById('adm_seniorEmail').value.trim();
+      const pass  = document.getElementById('adm_seniorPass').value;
+      if (!email) { hideLoader(); return setMsg('adm_login_msg', 'أدخل البريد الإلكتروني.', 'warn'); }
+      if (!pass)  { hideLoader(); return setMsg('adm_login_msg', 'أدخل كلمة المرور.', 'warn'); }
+      res = await gasCall('api_seniorLogin', { seniorEmail: email, password: pass });
+    }
+
+    if (res && res.ok) {
+      state.adminToken     = res.token;
+      state.adminRole      = res.role;
+      state.adminLeaderId  = res.leader_id || null;
+      state.adminLeaderName = res.leader_name || null;
+      state.adminSeniorEmail = res.senior_email || null;
+      document.getElementById('adminDashTitle').textContent =
+        res.leader_name || res.senior_name || 'لوحة الإدارة';
+      loadAdminDash();
+      showScreen('screenAdminDash');
+    } else {
+      setMsg('adm_login_msg', (res && res.message) || 'بيانات غير صحيحة.', 'error');
+    }
+  } catch (e) {
+    setMsg('adm_login_msg', 'خطأ: ' + e.message, 'error');
+  } finally { hideLoader(); }
+}
+
+function adminLogout() {
+  state.adminToken = null; state.adminRole = null;
+  state.adminLeaderId = null; state.adminLeaderName = null;
+  goHome();
+}
+
+function adminRefresh() { loadAdminDash(); }
+
+/* ================================================================
+   ADMIN DASHBOARD
+   ================================================================ */
+async function loadAdminDash() {
+  const body = document.getElementById('adminDashBody');
+  body.innerHTML = '<div class="empty"><div class="spinner"></div></div>';
+  showLoader('جارٍ تحميل البيانات...');
+
+  try {
+    const leaderId = state.adminLeaderId;
+    const token    = state.adminToken;
+
+    // Fetch reservations
+    const resData = await gasCall('api_listReservations', { token, leaderId });
+    const reservations = Array.isArray(resData) ? resData : (resData.reservations || resData.data || []);
+
+    const total     = reservations.length;
+    const confirmed = reservations.filter(r => !isCancelled(r)).length;
+    const cancelled = total - confirmed;
+
+    // System status
+    let systemStatus = null;
+    try {
+      systemStatus = await gasCall('getSystemStatus', { leaderId });
+    } catch (e) { /* ignore */ }
+
+    body.innerHTML = `
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-num">${total}</div>
+          <div class="stat-lbl">إجمالي الحجوزات</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">${confirmed}</div>
+          <div class="stat-lbl">مؤكدة</div>
+        </div>
+      </div>
+      <div class="stats-row" style="margin-top:-6px">
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--danger)">${cancelled}</div>
+          <div class="stat-lbl">ملغاة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:${systemStatus?.closed?'var(--danger)':'var(--success)'}">
+            ${systemStatus?.closed ? '⛔' : '✅'}
+          </div>
+          <div class="stat-lbl">حالة النظام</div>
+        </div>
+      </div>
+
+      ${systemStatus?.closed ? `
+        <div class="alert error">
+          <span class="alert-icon">⛔</span>
+          <span>النظام مغلق. آخر يوم للحجز: ${systemStatus.closeAtText || '—'}</span>
+        </div>
+      ` : ''}
+
+      <!-- Quick Actions -->
+      <div class="admin-section">
+        <div class="admin-section-head">⚡ إجراءات سريعة</div>
+        <div class="admin-section-body" style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-ghost btn-sm" onclick="adminShowAllReservations()">📋 عرض جميع الحجوزات</button>
+          <button class="btn btn-ghost btn-sm" onclick="adminOpenFullDashboard()">🔗 فتح لوحة التحكم الكاملة</button>
+        </div>
+      </div>
+
+      <!-- Recent Reservations -->
+      <div class="admin-section">
+        <div class="admin-section-head">🕐 أحدث الحجوزات</div>
+        <div class="admin-section-body" id="adminRecentRes">
+          ${reservations.length === 0
+            ? '<div class="empty" style="padding:20px 0"><div class="empty-icon">📭</div><div class="empty-sub">لا توجد حجوزات حتى الآن</div></div>'
+            : reservations.slice(0, 8).map(r => buildAdminResRow(r)).join('')
+          }
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+    `;
+  } catch (e) {
+    body.innerHTML = `<div class="alert error" style="margin:16px"><span>خطأ: ${e.message}</span></div>`;
+  } finally { hideLoader(); }
+}
+
+function buildAdminResRow(r) {
+  const cancelled = isCancelled(r);
+  const name   = r.name || r.Name || '—';
+  const date   = r.date || r.Date || '';
+  const time   = r.time || r.Time || '';
+  const branch = r.branch || r.branch_code || '';
+  const empId  = r.employeeId || r.employee_id || '';
+  return `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:14px;font-weight:700">${name}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">${formatDateAr(date)} ${time ? '· '+time : ''} ${branch ? '· '+branch : ''}</div>
+        ${empId ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">رقم الموظف: ${empId}</div>` : ''}
+      </div>
+      <div class="res-badge ${cancelled ? 'cancelled' : 'confirmed'}">${cancelled ? 'ملغي' : 'مؤكد'}</div>
+    </div>
+  `;
+}
+
+function adminShowAllReservations() {
+  toast('جارٍ تحميل الحجوزات...', 'info', 1500);
+  loadAdminDash();
+}
+
+function adminOpenFullDashboard() {
+  const url = GAS_URL + '?admin2=true';
+  window.open(url, '_blank');
+}
+
+/* ================================================================
+   DATE FORMATTING
+   ================================================================ */
+function formatDateAr(dateStr) {
+  const m = String(dateStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return dateStr;
+  const days = ['الاحد','الاثنين','الثلاثاء','الاربعاء','الخميس','الجمعة','السبت'];
+  const dt = new Date(+m[1], +m[2]-1, +m[3]);
+  return `${days[dt.getDay()]} ${toAr(m[3])}/${toAr(m[2])}/${toAr(m[1])}`;
+}
+
+/* ================================================================
+   NOTE: GAS doPost handler required on backend
+   Your GAS currently uses doGet. The PWA calls GAS via fetch POST.
+   Add this to your Code.gs:
+
+   function doPost(e) {
+     try {
+       const body = JSON.parse(e.postData.contents || '{}');
+       const action = body.action;
+       delete body.action;
+       const result = this[action] ? this[action].call(this, ...Object.values(body)) : {ok:false,message:'Unknown action'};
+       return ContentService.createTextOutput(JSON.stringify(result))
+         .setMimeType(ContentService.MimeType.JSON);
+     } catch(err) {
+       return ContentService.createTextOutput(JSON.stringify({ok:false,message:err.message}))
+         .setMimeType(ContentService.MimeType.JSON);
+     }
+   }
+
+   See the README section below for full integration guide.
+   ================================================================ */
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  // Preload leaders silently
+  ensureLeaders().catch(() => {});
+});
+</script>
+
+</body>
+</html>
