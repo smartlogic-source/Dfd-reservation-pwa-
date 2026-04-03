@@ -1,0 +1,997 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Day For Development | شركة الدواء</title>
+
+  <style>
+    :root{
+      --aldawaa-blue:#004c97;
+      --aldawaa-gold:#e0aa3e;
+      --background-light:linear-gradient(135deg,#e8f1fa,#c7dcf5);
+    }
+
+    body{
+      font-family:'Tajawal',sans-serif;
+      background:var(--background-light);
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+
+    .container{
+      background:#fff;
+      width:95%;
+      max-width:420px;
+      padding:25px 20px 35px;
+      border-radius:20px;
+      box-shadow:0 6px 25px rgba(0,0,0,.15);
+      text-align:center;
+      animation:fadeIn .5s ease;
+      box-sizing:border-box;
+    }
+
+    .header{
+      background:var(--aldawaa-blue);
+      color:#fff;
+      padding:12px;
+      border-radius:15px 15px 0 0;
+      margin:-25px -20px 20px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      position:relative;
+    }
+
+    .header-title{
+      font-size:1.1em;
+      font-weight:600;
+    }
+
+    input,select{
+      width:100%;
+      padding:12px;
+      margin-bottom:15px;
+      font-size:16px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      box-sizing:border-box;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    input:focus,select:focus{
+      border-color:var(--aldawaa-blue);
+      box-shadow:0 0 6px rgba(0,76,151,.4);
+      outline:none;
+    }
+
+    /* ✅ Main booking button only (avoid breaking calendar buttons) */
+    .main-btn{
+      width:100%;
+      background:linear-gradient(135deg,#e0aa3e,#c9982a);
+      color:#fff;
+      border:none;
+      padding:14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-size:17px;
+      font-weight:600;
+      transition:all .25s ease;
+    }
+    .main-btn:hover{
+      background:linear-gradient(135deg,#d9a232,#b88c25);
+      transform:scale(1.03);
+    }
+    .main-btn.loading{opacity:.7;cursor:wait;}
+
+    #message{
+      margin-top:18px;
+      font-weight:bold;
+      border-radius:8px;
+      padding:10px;
+      opacity:0;
+      transition:opacity .4s ease;
+    }
+    #message.show{opacity:1}
+
+    .msg-success{color:#1b5e20;background:#e8f5e9;border:1px solid #81c784;}
+    .msg-error{color:#b71c1c;background:#ffebee;border:1px solid #ef9a9a;}
+    .msg-warning{color:#795548;background:#fff3e0;border:1px solid #ffcc80;}
+    .msg-info{color:#0d47a1;background:#e3f2fd;border:1px solid #90caf9;}
+
+    footer{margin-top:25px;font-size:13px;color:#777;}
+
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(10px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    /* Spinner overlay */
+    #loadingOverlay{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(255,255,255,.85);
+      z-index:9999;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+    }
+    .spinner{
+      width:55px;height:55px;
+      border:5px solid #e6d9b3;
+      border-top-color:#e0aa3e;
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+      margin-bottom:15px;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    #loadingOverlay p{
+      color:#004c97;
+      font-size:16px;
+      font-weight:bold;
+    }
+
+    /* Admin gear (always) */
+    .admin-gear{
+      position:absolute;
+      left:14px;
+      top:50%;
+      transform:translateY(-50%);
+      background:transparent;
+      border:none;
+      padding:0;
+      margin:0;
+      width:auto;
+      height:auto;
+      font-size:22px;
+      color:#fff;
+      text-decoration:none;
+      cursor:pointer;
+      line-height:1;
+      transition:transform .25s ease,color .25s ease;
+    }
+    .admin-gear:hover{
+      transform:translateY(-50%) rotate(45deg) scale(1.15);
+      color:#e0aa3e;
+    }
+
+    /* ===================== ✅ Calendar View ===================== */
+    .cal-wrap{
+      width:100%;
+      border:1px solid #e6e6e6;
+      border-radius:14px;
+      padding:12px;
+      margin-bottom:15px;
+      box-sizing:border-box;
+      background:#fff;
+      text-align:initial;
+    }
+    .cal-wrap.disabled{
+      opacity:.55;
+      pointer-events:none;
+    }
+
+    .cal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .cal-title{
+      font-weight:800;
+      color:#0d47a1;
+      font-size:15px;
+    }
+    .cal-nav{
+      width:42px;
+      height:36px;
+      border-radius:10px;
+      border:1px solid #dbe6f3;
+      background:#f3f7ff;
+      cursor:pointer;
+      font-size:18px;
+      line-height:1;
+      color:#004c97;
+      transition:transform .15s ease, background .2s ease;
+    }
+    .cal-nav:hover{ transform:scale(1.03); }
+
+    .cal-weekdays{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:6px;
+      margin-bottom:6px;
+      color:#607d8b;
+      font-size:12px;
+      font-weight:800;
+      text-align:center;
+    }
+    .cal-grid{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:6px;
+    }
+
+    .cal-day{
+      height:40px;
+      border-radius:12px;
+      border:1px solid #e6e6e6;
+      background:#fafafa;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+      color:#607d8b;
+      user-select:none;
+      position:relative;
+    }
+    .cal-day.blank{
+      background:transparent;
+      border-color:transparent;
+    }
+    .cal-day.unavailable{
+      background:#f2f2f2;
+      color:#9e9e9e;
+      border-color:#ececec;
+      opacity:.9;
+    }
+    .cal-day.available{
+      background:rgba(224,170,62,.18);
+      border-color:rgba(224,170,62,.55);
+      color:#6b4a00;
+      cursor:pointer;
+    }
+    .cal-day.available:hover{
+      background:rgba(224,170,62,.28);
+    }
+    .cal-day.selected{
+      border:2px solid var(--aldawaa-blue);
+      background:rgba(0,76,151,.08);
+      color:var(--aldawaa-blue);
+    }
+    .cal-day.today::after{
+      content:"";
+      position:absolute;
+      bottom:7px;
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--aldawaa-blue);
+      opacity:.6;
+    }
+
+    .cal-hint{
+      margin-top:10px;
+      font-size:12.5px;
+      color:#607d8b;
+      text-align:center;
+      font-weight:700;
+    }
+
+    @media (max-width:480px){
+      body{padding:0}
+      .container{
+        border-radius:0;
+        height:100vh;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+      }
+      .header{border-radius:0}
+    }
+  
+    /* ===== UI Refresh (non-breaking, visual only) ===== */
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
+
+    :root{
+      --aldawaa-blue:#0b3f77;
+      --aldawaa-gold:#c9982f;
+      --brand-sky:#3f87d9;
+      --surface:#ffffff;
+      --surface-soft:#f7fafd;
+      --text:#15263a;
+      --line:#d5e3f3;
+      --background-light:radial-gradient(circle at 15% 20%,#eef5ff 0%,#e2eefc 34%,#d6e6fa 100%);
+    }
+
+    body{
+      color:var(--text);
+      padding:20px;
+      position:relative;
+      overflow-x:hidden;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:
+        radial-gradient(circle at 85% 8%, rgba(201,152,47,.16), transparent 40%),
+        radial-gradient(circle at 10% 88%, rgba(63,135,217,.12), transparent 42%);
+      pointer-events:none;
+    }
+
+    .container{
+      background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+      border:1px solid rgba(11,63,119,.10);
+      box-shadow:0 20px 48px rgba(11,63,119,.16);
+      border-radius:24px;
+      padding:30px 24px 32px;
+      position:relative;
+      z-index:1;
+    }
+
+    .header{
+      background:linear-gradient(135deg,#0b3f77,#0a2f59);
+      border-radius:18px 18px 12px 12px;
+      margin:-30px -24px 22px;
+      padding:15px 14px;
+      box-shadow:0 10px 24px rgba(10,47,89,.28);
+    }
+    .header-title{
+      letter-spacing:.2px;
+      font-size:1.03rem;
+      font-weight:700;
+    }
+
+    input,select{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      padding:13px 12px;
+      margin-bottom:12px;
+      font-size:15px;
+      font-weight:500;
+    }
+    input::placeholder{color:#7f93a8;}
+    input:focus,select:focus{
+      border-color:rgba(11,63,119,.5);
+      box-shadow:0 0 0 4px rgba(63,135,217,.16);
+    }
+
+    .main-btn{
+      border-radius:12px;
+      padding:14px;
+      font-size:16px;
+      letter-spacing:.2px;
+      box-shadow:0 10px 20px rgba(201,152,47,.28);
+    }
+    .main-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 22px rgba(201,152,47,.34);
+    }
+
+    #message{
+      font-size:14px;
+      line-height:1.6;
+      border-radius:12px;
+      text-align:center;
+    }
+
+    .cal-wrap{
+      background:var(--surface);
+      border-color:var(--line);
+      border-radius:16px;
+      box-shadow:0 8px 20px rgba(15,50,90,.07);
+      padding:14px 12px;
+    }
+    .cal-head{margin-bottom:12px;}
+    .cal-title{
+      color:#123c6a;
+      font-size:14px;
+      font-weight:800;
+    }
+    .cal-nav{
+      border-color:#cddff4;
+      background:#f4f9ff;
+      border-radius:12px;
+      font-weight:800;
+    }
+    .cal-nav:hover{background:#eaf3ff;}
+
+    .cal-day{
+      border-color:#e0eaf5;
+      background:#fbfdff;
+      border-radius:11px;
+      font-weight:700;
+      transition:background .2s ease,border-color .2s ease,color .2s ease;
+    }
+    .cal-day.available{
+      background:rgba(201,152,47,.14);
+      border-color:rgba(201,152,47,.42);
+      color:#6a4d15;
+    }
+    .cal-day.available:hover{background:rgba(201,152,47,.22);}
+    .cal-day.selected{
+      border:2px solid #0b3f77;
+      background:rgba(63,135,217,.13);
+      color:#0b3f77;
+    }
+
+    #loadingOverlay{
+      background:rgba(246,250,255,.9);
+      backdrop-filter:blur(2px);
+    }
+    .spinner{
+      border-color:#dfecfa;
+      border-top-color:#0b3f77;
+    }
+    #loadingOverlay p{color:#0b3f77;}
+
+    footer{
+      margin-top:20px;
+      color:#7b8da2;
+      font-size:12px;
+    }
+
+    @media (max-width:480px){
+      body{padding:0;}
+      .container{
+        border-radius:0;
+        box-shadow:none;
+        border:none;
+        background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+      }
+      .header{border-radius:0; margin:-30px -24px 20px;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="#" class="admin-gear" onclick="goAdmin();return false;" title="لوحة الإدارة">⚙️</a>
+      <span class="header-title">شركة الدواء | Day For Development</span>
+    </div>
+
+    <!-- Leader -->
+    <select id="leader" onchange="onLeaderChange()">
+      <option value="">اختر المشرف</option>
+    </select>
+
+    <!-- Branch -->
+    <select id="branch" onchange="onBranchChange()" disabled>
+      <option value="">اختر الفرع</option>
+    </select>
+
+    <input type="text" id="name" placeholder="اكتب اسمك" required />
+    <input type="email" id="email" placeholder="اكتب بريدك الإلكتروني" required />
+    <input type="text" id="employeeId" placeholder="أدخل رقم الموظف (4 أرقام على الأقل)" required />
+
+    <!-- ✅ Calendar View (replaces day select) -->
+    <div id="calWrap" class="cal-wrap disabled">
+      <div class="cal-head">
+        <button type="button" class="cal-nav" id="calPrev" aria-label="السابق">‹</button>
+        <div class="cal-title" id="calTitle">—</div>
+        <button type="button" class="cal-nav" id="calNext" aria-label="التالي">›</button>
+      </div>
+
+      <div class="cal-weekdays">
+
+        <span>س</span><span>ح</span><span>ن</span><span>ث</span><span>ر</span><span>خ</span><span>ج</span>
+      </div>
+
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-hint" id="calHint">اختر يوم متاح لإظهار الأوقات.</div>
+    </div>
+
+    <!-- Time -->
+    <select id="time" disabled>
+      <option value="">اختر الوقت</option>
+    </select>
+
+    <button id="bookBtn" class="main-btn" onclick="book()">احجز الموعد</button>
+
+    <div id="message"></div>
+    <footer>© شركة الدواء للخدمات الطبية</footer>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>جارٍ إرسال الحجز...</p>
+  </div>
+
+  <script>
+    // ===================== Template vars =====================
+    // IMPORTANT: keep BASE_URL because admin2 login had issues without it.
+    const BASE_URL = "<?= BASE_URL ?>";
+    const PRESELECTED_LEADER = "<?= PRESELECTED_LEADER ?>";
+
+    // ===================== State =====================
+    let currentLeaderId = "";
+    let currentBranchCode = "";
+    let selectedDateStr = "";
+    let allSlots = {}; // { "YYYY-MM-DD": [{slot_id,timeText}, ...] }
+    let branchesCache = [];
+
+    // Calendar state
+    let calView = { y: 0, m: 0 };      // month 0-based
+    let calAvailable = new Set();      // YYYY-MM-DD keys
+
+    // ===================== UI Helpers =====================
+    function showMessage(text, type="warning"){
+      const msg = document.getElementById("message");
+      msg.textContent = text;
+      msg.className = "";
+      msg.classList.add("show");
+      if(type==="error") msg.classList.add("msg-error");
+      else if(type==="success") msg.classList.add("msg-success");
+      else if(type==="info") msg.classList.add("msg-info");
+      else msg.classList.add("msg-warning");
+    }
+
+    function clearMessage(){
+      const msg = document.getElementById("message");
+      msg.textContent = "";
+      msg.className = "";
+    }
+
+    function setLoading(on, text){
+      const overlay = document.getElementById("loadingOverlay");
+      const p = overlay.querySelector("p");
+      if(p && typeof text==="string") p.textContent = text;
+      overlay.style.display = on ? "flex" : "none";
+      const btn = document.getElementById("bookBtn");
+      if(btn){
+        btn.classList.toggle("loading", !!on);
+        btn.disabled = !!on;
+      }
+    }
+
+    function setDayTimeEnabled(on){
+      const cal = document.getElementById("calWrap");
+      if(cal) cal.classList.toggle("disabled", !on);
+      document.getElementById("time").disabled = !on;
+    }
+
+    function resetDayTime(){
+      document.getElementById("time").innerHTML = "<option value=''>اختر الوقت</option>";
+      allSlots = {};
+      selectedDateStr = "";
+      calAvailable = new Set();
+
+      const grid = document.getElementById("calGrid");
+      const title = document.getElementById("calTitle");
+      if(grid) grid.innerHTML = "";
+      if(title) title.textContent = "—";
+    }
+
+    function resetBranch(){
+      const b = document.getElementById("branch");
+      b.innerHTML = "<option value=''>اختر الفرع</option>";
+      b.disabled = true;
+      currentBranchCode = "";
+    }
+
+    // ===================== Date label (kept original) =====================
+    function toArabicDigits(str){
+      return String(str).replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+    }
+
+    function formatDayDateLabel(dateStr){
+      const m = String(dateStr||"").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(!m) return dateStr;
+
+      const y  = Number(m[1]);
+      const mo = Number(m[2]);
+      const d  = Number(m[3]);
+      const dt = new Date(y, mo-1, d, 0, 0, 0, 0);
+
+      const daysAr = ["الاحد","الاثنين","الثلاثاء","الاربعاء","الخميس","الجمعة","السبت"];
+      const dayName = daysAr[dt.getDay()];
+
+      return `${dayName} - ${toArabicDigits(d)}/${toArabicDigits(mo)}/${toArabicDigits(y)}`;
+    }
+
+    // ===================== Calendar helpers =====================
+    function pad2(n){ return String(n).padStart(2,"0"); }
+
+    function dateToKey(dt){
+      const y = dt.getFullYear();
+      const m = pad2(dt.getMonth()+1);
+      const d = pad2(dt.getDate());
+      return `${y}-${m}-${d}`;
+    }
+
+    function keyToDate(key){
+      const m = String(key||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(!m) return null;
+      return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]), 0,0,0,0);
+    }
+
+    function setCalendarAvailable(keys){
+      calAvailable = new Set(keys || []);
+
+      if(keys && keys.length){
+        const first = keyToDate(keys[0]);
+        if(first){
+          calView.y = first.getFullYear();
+          calView.m = first.getMonth();
+        }
+      } else {
+        const now = new Date();
+        calView.y = now.getFullYear();
+        calView.m = now.getMonth();
+      }
+
+      renderCalendar();
+    }
+
+    function renderCalendar(){
+      const grid = document.getElementById("calGrid");
+      const title = document.getElementById("calTitle");
+      if(!grid || !title) return;
+
+      const monthNames = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+      title.textContent = `${monthNames[calView.m]} ${toArabicDigits(calView.y)}`;
+
+      grid.innerHTML = "";
+
+      const firstDay = new Date(calView.y, calView.m, 1, 0,0,0,0);
+      const daysInMonth = new Date(calView.y, calView.m+1, 0).getDate();
+
+      // Week starts Saturday (س) then Sunday ... Friday
+      const jsDow = firstDay.getDay(); // 0=Sun..6=Sat
+      const offset = (jsDow + 1) % 7;  // Sat->0, Sun->1, ... Fri->6
+
+      for(let i=0;i<offset;i++){
+        const b = document.createElement("div");
+        b.className = "cal-day blank";
+        grid.appendChild(b);
+      }
+
+      const todayKey = dateToKey(new Date());
+
+      for(let d=1; d<=daysInMonth; d++){
+        const dt = new Date(calView.y, calView.m, d, 0,0,0,0);
+        const key = dateToKey(dt);
+
+        const cell = document.createElement("div");
+        cell.className = "cal-day";
+        cell.textContent = toArabicDigits(d);
+
+        if(key === todayKey) cell.classList.add("today");
+
+        const isAvail = calAvailable.has(key);
+
+        if(isAvail){
+          cell.classList.add("available");
+          cell.title = formatDayDateLabel(key);
+
+          cell.addEventListener("click", ()=>{
+            selectCalendarDate(key);
+          });
+        } else {
+          cell.classList.add("unavailable");
+        }
+
+        if(selectedDateStr && key === selectedDateStr){
+          cell.classList.add("selected");
+        }
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function selectCalendarDate(key){
+      selectedDateStr = key;
+
+      // اختياري: أخفي رسالة الهينت لو عندك
+      const hint = document.getElementById("calHint");
+      if(hint) hint.style.display = "none";
+
+      renderCalendar();
+      loadTimes();
+      const timeElement = document.getElementById("time");
+      if(timeElement) {
+        timeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function calPrevMonth(){
+      calView.m--;
+      if(calView.m < 0){ calView.m = 11; calView.y--; }
+      renderCalendar();
+    }
+
+    function calNextMonth(){
+      calView.m++;
+      if(calView.m > 11){ calView.m = 0; calView.y++; }
+      renderCalendar();
+    }
+
+    function preselectedLeaderId_(){
+      if(String(PRESELECTED_LEADER || "").trim()){
+        return String(PRESELECTED_LEADER || "").trim();
+      }
+      try{
+        return String(new URLSearchParams(window.location.search).get("leader") || "").trim();
+      }catch(e){
+        return "";
+      }
+    }
+
+    function applyPreselectedLeader_(){
+      const wantedLeaderId = preselectedLeaderId_();
+      const sel = document.getElementById("leader");
+      if(!wantedLeaderId || !sel) return;
+
+      const exists = Array.from(sel.options || []).some(opt => String(opt.value || "").trim() === wantedLeaderId);
+      if(!exists) return;
+
+      sel.value = wantedLeaderId;
+      onLeaderChange();
+    }
+
+    // ===================== Load Leaders =====================
+    function loadLeaders(){
+      google.script.run
+        .withSuccessHandler((leaders)=>{
+          const sel = document.getElementById("leader");
+          sel.innerHTML = "<option value=''>اختر المشرف</option>";
+          (leaders||[]).forEach(l=>{
+            const opt = document.createElement("option");
+            opt.value = l.leader_id;
+            opt.textContent = l.leader_name || l.leader_id;
+            sel.appendChild(opt);
+          });
+          applyPreselectedLeader_();
+        })
+        .withFailureHandler((err)=>{
+          console.error(err);
+          showMessage("تعذر تحميل قائمة المشرفين.", "error");
+        })
+        .api_listLeaders();
+    }
+
+    // ===================== Leader change =====================
+    function onLeaderChange(){
+      clearMessage();
+
+      currentLeaderId = document.getElementById("leader").value.trim();
+
+      resetBranch();
+      resetDayTime();
+      setDayTimeEnabled(false);
+
+      if(!currentLeaderId){
+        showMessage("اختر المشرف أولاً.", "warning");
+        return;
+      }
+
+      loadBranchesForLeader(currentLeaderId);
+    }
+
+    // ===================== Branches =====================
+    function loadBranchesForLeader(leaderId){
+      resetBranch();
+      resetDayTime();
+      setDayTimeEnabled(false);
+      clearMessage();
+
+      setLoading(true, "جارٍ تحميل الفروع...");
+
+      google.script.run
+        .withSuccessHandler((list)=>{
+          setLoading(false);
+          branchesCache = list || [];
+
+          const b = document.getElementById("branch");
+          b.innerHTML = "<option value=''>اختر الفرع</option>";
+
+          if(!branchesCache.length){
+            showMessage("⚠️ لا توجد فروع مسجلة لهذا المشرف. تواصل مع المشرف لإضافتها.", "warning");
+            b.disabled = true;
+            return;
+          }
+
+        branchesCache.forEach(x=>{
+          const opt = document.createElement("option");
+          opt.value = x.branch_code;
+          opt.textContent = x.branch_name || x.branch_code;
+          b.appendChild(opt);
+        });
+
+          b.disabled = false;
+        })
+        .withFailureHandler((err)=>{
+          console.error(err);
+          setLoading(false);
+          showMessage("تعذر تحميل الفروع.", "error");
+        })
+        .api_listBranches(leaderId);
+    }
+
+    // ===================== Branch change =====================
+    function onBranchChange(){
+      clearMessage();
+
+      currentBranchCode = document.getElementById("branch").value.trim();
+
+      resetDayTime();
+      setDayTimeEnabled(false);
+
+      if(!currentLeaderId){
+        showMessage("اختر المشرف أولاً.", "warning");
+        return;
+      }
+      if(!currentBranchCode){
+        showMessage("اختر الفرع أولاً.", "warning");
+        return;
+      }
+
+      setLoading(true, "جارٍ تحميل المواعيد...");
+
+      google.script.run
+        .withSuccessHandler((st)=>{
+          if(st && st.closed){
+            setDayTimeEnabled(false);
+            showMessage("⛔ انتهت فترة استقبال المواعيد. آخر يوم للحجز: " + (st.closeAtText || "غير محدد"), "error");
+            setLoading(false);
+            return;
+          }
+
+          setDayTimeEnabled(true);
+          clearMessage();
+
+          loadDaysAndTimes();
+        })
+        .withFailureHandler((err)=>{
+          console.error(err);
+          showMessage("تعذر فحص حالة النظام.", "error");
+          setLoading(false);
+        })
+        .getSystemStatus(currentLeaderId);
+    }
+
+    // ===================== Slots (days + times) =====================
+    function loadDaysAndTimes(){
+      if(!currentLeaderId || !currentBranchCode){
+        setLoading(false);
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((data)=>{
+            console.log("=== getAvailableSlotsV2 RESPONSE ===");
+            console.log(data);
+            console.log("Keys:", Object.keys(data || {}));
+          setLoading(false);
+
+          allSlots = data || {};
+          const dateKeys = Object.keys(allSlots).sort();
+
+          // Build calendar available days
+          selectedDateStr = "";
+          document.getElementById("time").innerHTML = "<option value=''>اختر الوقت</option>";
+          setCalendarAvailable(dateKeys);
+          document.getElementById("calHint").style.display = "block";
+          if(!dateKeys.length){
+            showMessage("لا توجد أيام متاحة للحجز حاليًا.", "warning");
+            return;
+          }
+
+          // Optional: auto-select first available day
+          // selectCalendarDate(dateKeys[0]);
+        })
+        .withFailureHandler((err)=>{
+          console.error(err);
+          showMessage("تعذر تحميل المواعيد.", "error");
+          setLoading(false);
+        })
+        .getAvailableSlotsV2(currentLeaderId, currentBranchCode);
+    }
+
+function loadTimes(){
+  const dateStr = selectedDateStr || "";
+  const timeSelect = document.getElementById("time");
+  timeSelect.innerHTML = "<option value=''>اختر الوقت</option>";
+
+  if(!dateStr){
+    return; // لسه مفيش يوم متحدد
+  }
+
+  const list = allSlots[dateStr] || [];
+
+  if(!list.length){
+    showMessage("⚠️ لا توجد أوقات متاحة لهذا اليوم. اختر يومًا آخر.", "warning");
+    return;
+  }
+
+  // Robust mapping (supports different field names)
+  list.forEach(s=>{
+    const slotId =
+      String(s.slot_id ?? s.slotId ?? s.id ?? s.slotID ?? "").trim();
+
+    const timeTxt =
+      String(s.timeText ?? s.time_text ?? s.time ?? s.label ?? "").trim();
+
+    if(!slotId) return;
+
+    const opt = document.createElement("option");
+    opt.value = slotId;
+    opt.textContent = timeTxt || "موعد متاح";
+    timeSelect.appendChild(opt);
+  });
+
+  // لو بعد الفلترة مفيش options
+  if(timeSelect.options.length <= 1){
+    showMessage("⚠️ لم يتم العثور على أوقات صالحة لهذا اليوم.", "warning");
+  }
+}
+
+    // ===================== Booking =====================
+    function book(){
+      const leaderId = currentLeaderId;
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const employeeId = document.getElementById("employeeId").value.trim();
+
+      const dateStr = selectedDateStr;                   // ✅ from calendar
+      const slotId  = document.getElementById("time").value;  // slot_id
+
+      if(!leaderId) return showMessage("⚠️ اختر المشرف أولاً.", "warning");
+      if(!currentBranchCode) return showMessage("⚠️ اختر الفرع أولاً.", "warning");
+
+      if(!name || !email || !employeeId || !dateStr || !slotId){
+        return showMessage("⚠️ يرجى تعبئة جميع الحقول.", "warning");
+      }
+
+      if(employeeId.length < 4){
+        return showMessage("⚠️ رقم الموظف يجب أن يكون 4 أرقام على الأقل.", "error");
+      }
+
+      setLoading(true, "جارٍ إرسال الحجز...");
+
+      google.script.run
+        .withSuccessHandler((res)=>{
+          if(res && res.success){
+            setLoading(true, "تم تأكيد الحجز...");
+            showMessage(res.message, "success");
+            setTimeout(()=>setLoading(false), 500);
+            setTimeout(()=>loadDaysAndTimes(), 900);
+          } else {
+            setLoading(false);
+            showMessage((res && res.message) ? res.message : "فشل الحجز", "error");
+          }
+        })
+        .withFailureHandler((err)=>{
+          setLoading(false);
+          console.error(err);
+          showMessage("حدث خطأ أثناء الحجز، يرجى المحاولة لاحقًا.", "error");
+        })
+        .bookSlotV2(leaderId, name, email, dateStr, slotId, employeeId, currentBranchCode);
+    }
+
+    // ===================== Admin2 =====================
+    function goAdmin(){
+      const url = BASE_URL + "?admin2=true";
+      try{ window.top.location.href = url; }
+      catch(e){ window.location.assign(url); }
+    }
+
+    // ===================== Init =====================
+    window.onload = function(){
+      loadLeaders();
+      setDayTimeEnabled(false);
+
+      // calendar nav
+      document.getElementById("calPrev")?.addEventListener("click", calPrevMonth);
+      document.getElementById("calNext")?.addEventListener("click", calNextMonth);
+
+      // Auto refresh every 30s if leader+branch chosen
+      setInterval(()=>{
+        if(currentLeaderId && currentBranchCode){
+          loadDaysAndTimes();
+        }
+      }, 30000);
+    };
+  </script>
+</body>
+</html>
