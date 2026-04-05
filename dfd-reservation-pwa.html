@@ -1223,18 +1223,20 @@ function goToAdmin() {
 }
 
 /* ================================================================
-   GAS API CALL — wraps fetch to GAS Web App
+   GAS API CALL
+   Uses fetch GET with URL params — the only method GAS supports
+   from external origins without CORS issues.
    ================================================================ */
 async function gasCall(action, params = {}) {
-  const body = { action, ...params };
-  const resp = await fetch(GAS_URL, {
-    method: "POST",
-    body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" }
+  const qs = new URLSearchParams({ api: "1", action, ...params });
+  // GAS redirects GET requests, so we must follow redirects (default)
+  const resp = await fetch(`${GAS_URL}?${qs.toString()}`, {
+    method: "GET",
+    redirect: "follow",
   });
   const text = await resp.text();
   try { return JSON.parse(text); }
-  catch { return { ok: false, message: text }; }
+  catch (e) { return { ok: false, message: "Parse error: " + text.slice(0, 200) }; }
 }
 
 /* ================================================================
@@ -1279,7 +1281,7 @@ async function ensureLeaders() {
   if (state.leaders.length) return state.leaders;
   showLoader('جارٍ تحميل المشرفين...');
   try {
-    const data = await gasCall('api_listLeaders');
+    const data = await gasCall('listLeaders');
     if (Array.isArray(data)) state.leaders = data;
     else if (data.ok === false) throw new Error(data.message);
     else state.leaders = data;
@@ -1319,7 +1321,7 @@ async function onBookLeaderChange() {
 
   showLoader('جارٍ تحميل الفروع...');
   try {
-    const branches = await gasCall('api_listBranches', { leaderId: state.bk.leaderId });
+    const branches = await gasCall('listBranches', { leaderId: state.bk.leaderId });
     const list = Array.isArray(branches) ? branches : (branches.branches || []);
     branchSel.innerHTML = '<option value="">اختر الفرع...</option>';
     list.forEach(b => {
@@ -1533,7 +1535,7 @@ async function submitBooking() {
   btn.disabled = true;
   showLoader('جارٍ إرسال الحجز...');
   try {
-    const res = await gasCall('bookSlotV2', {
+    const res = await gasCall('bookSlot', {
       leaderId:   state.bk.leaderId,
       name:       state.bk.name,
       email:      state.bk.email,
@@ -1568,10 +1570,10 @@ async function searchMyReservations() {
 
   showLoader('جارٍ البحث...');
   try {
-    const res = await gasCall('api_listReservations', {
+    const res = await gasCall('listMyReservations', {
       leaderId: leader,
-      employeeId: empId || undefined,
-      email: email || undefined,
+      employeeId: empId || '',
+      email: email || '',
     });
     const list = Array.isArray(res) ? res : (res.reservations || res.data || []);
     state.myRes = list;
@@ -1680,9 +1682,9 @@ async function cancelMyReservation() {
 
   showLoader('جارٍ الإلغاء...');
   try {
-    const res = await gasCall('api_cancelReservation', {
-      token, leaderId,
-      employeeId: r.employeeId || r.employee_id || ''
+    const res = await gasCall('cancelReservation', {
+      leaderId,
+      reservationId: token
     });
     if (res && res.ok) {
       toast('تم إلغاء الحجز بنجاح ✅', 'success');
@@ -1721,13 +1723,13 @@ async function doAdminLogin() {
       const pass     = document.getElementById('adm_pass').value;
       if (!leaderId) { hideLoader(); return setMsg('adm_login_msg', 'اختر المشرف.', 'warn'); }
       if (!pass)     { hideLoader(); return setMsg('adm_login_msg', 'أدخل كلمة المرور.', 'warn'); }
-      res = await gasCall('api_adminLogin', { leaderId, password: pass });
+      res = await gasCall('adminLogin', { leaderId, password: pass });
     } else {
       const email = document.getElementById('adm_seniorEmail').value.trim();
       const pass  = document.getElementById('adm_seniorPass').value;
       if (!email) { hideLoader(); return setMsg('adm_login_msg', 'أدخل البريد الإلكتروني.', 'warn'); }
       if (!pass)  { hideLoader(); return setMsg('adm_login_msg', 'أدخل كلمة المرور.', 'warn'); }
-      res = await gasCall('api_seniorLogin', { seniorEmail: email, password: pass });
+      res = await gasCall('seniorLogin', { seniorEmail: email, password: pass });
     }
 
     if (res && res.ok) {
@@ -1769,7 +1771,7 @@ async function loadAdminDash() {
     const token    = state.adminToken;
 
     // Fetch reservations
-    const resData = await gasCall('api_listReservations', { token, leaderId });
+    const resData = await gasCall('adminListReservations', { token, leaderId });
     const reservations = Array.isArray(resData) ? resData : (resData.reservations || resData.data || []);
 
     const total     = reservations.length;
